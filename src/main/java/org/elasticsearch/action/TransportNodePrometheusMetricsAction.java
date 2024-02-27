@@ -94,11 +94,11 @@ public class TransportNodePrometheusMetricsAction extends HandledTransportAction
             // https://www.elastic.co/guide/en/elasticsearch/reference/6.4/cluster-health.html#request-params
             
             this.healthRequest = new ClusterHealthRequest().local(true);
-            this.nodesStatsRequest = new NodesStatsRequest("_local").clear().all();
+            this.nodesStatsRequest = new NodesStatsRequest().clear().all();
 
             // Indices stats request is not "node-specific", it does not support any "_local" notion
             // it is broad-casted to all cluster nodes.
-            this.indicesStatsRequest = isPrometheusIndices ? new IndicesStatsRequest() : null;
+            this.indicesStatsRequest = isPrometheusIndices ? new IndicesStatsRequest().all() : null;
 
             // Cluster settings are get via ClusterStateRequest (see elasticsearch RestClusterGetSettingsAction for details)
             // We prefer to send it to master node (hence local=false; it should be set by default but we want to be sure).
