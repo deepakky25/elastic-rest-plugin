@@ -38,7 +38,6 @@ public class RestHandlerPlugin extends Plugin implements ActionPlugin {
         SettingsFilter settingsFilter, IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<DiscoveryNodes> nodesInCluster) {
         return List.of(
-                new RestCatAction(),
                 new RestPrometheusMetricsAction(settings, clusterSettings)
         );
     }

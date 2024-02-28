@@ -1,12 +1,11 @@
 package org.elasticsearch.resthandler;
 
-import static org.elasticsearch.action.NodePrometheusMetricsAction.INSTANCE;
-import static org.elasticsearch.rest.RestRequest.Method.GET;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import org.elasticsearch.action.NodePrometheusMetricsRequest;
 import org.elasticsearch.action.NodePrometheusMetricsResponse;
+import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.client.internal.node.NodeClient;
 import org.elasticsearch.common.network.NetworkAddress;
 import org.elasticsearch.common.settings.ClusterSettings;
@@ -22,6 +21,9 @@ import java.util.Locale;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
+
+import static org.elasticsearch.action.NodePrometheusMetricsAction.INSTANCE;
+import static org.elasticsearch.rest.RestRequest.Method.GET;
 
 /**
  * REST action class for Prometheus Exporter plugin.
@@ -63,20 +65,16 @@ public class RestPrometheusMetricsAction extends BaseRestHandler {
                     @Override
                     public RestResponse buildResponse(NodePrometheusMetricsResponse response) throws Exception {
                         String clusterName = response.getClusterHealth().getClusterName();
-                        String nodeName = response.getNodeStats().getNode().getName();
-                        String nodeId = response.getNodeStats().getNode().getId();
+                        logger.info("Prepare new Prometheus metric collector for: [{}]", clusterName);
 
-                        logger.info("Prepare new Prometheus metric collector for: [{}], [{}], [{}]", clusterName, nodeId,
-                                    nodeName);
+                        PrometheusMetricsCatalog catalog = new PrometheusMetricsCatalog(clusterName, "es_");
+                        PrometheusMetricsCollector collector = new PrometheusMetricsCollector(catalog,
+                            prometheusSettings.getPrometheusIndices(), prometheusSettings.getPrometheusClusterSettings());
 
-                        PrometheusMetricsCatalog catalog = new PrometheusMetricsCatalog(clusterName, nodeName, nodeId, "es_");
-                        PrometheusMetricsCollector collector = new PrometheusMetricsCollector(
-                                catalog,
-                                prometheusSettings.getPrometheusIndices(),
-                                prometheusSettings.getPrometheusClusterSettings());
                         collector.registerMetrics();
-                        collector.updateMetrics(response.getClusterHealth(), response.getNodeStats(), response.getIndicesStats(),
-                            response.getClusterStatsData());
+                        collector.updateMetrics(response.getClusterHealth(), response.getNodesStats(), response.getIndicesStats(),
+                                response.getClusterStatsData());
+
                         return new RestResponse(RestStatus.OK, collector.getCatalog().toTextFormat());
                     }
         });

@@ -94,7 +94,7 @@ public class TransportNodePrometheusMetricsAction extends HandledTransportAction
             // https://www.elastic.co/guide/en/elasticsearch/reference/6.4/cluster-health.html#request-params
             
             this.healthRequest = new ClusterHealthRequest().local(true);
-            this.nodesStatsRequest = new NodesStatsRequest().clear().all();
+            this.nodesStatsRequest = new NodesStatsRequest().all();
 
             // Indices stats request is not "node-specific", it does not support any "_local" notion
             // it is broad-casted to all cluster nodes.
@@ -102,8 +102,7 @@ public class TransportNodePrometheusMetricsAction extends HandledTransportAction
 
             // Cluster settings are get via ClusterStateRequest (see elasticsearch RestClusterGetSettingsAction for details)
             // We prefer to send it to master node (hence local=false; it should be set by default but we want to be sure).
-            this.clusterStateRequest = isPrometheusClusterSettings ? new ClusterStateRequest()
-                    .clear().metadata(true).local(false) : null;
+            this.clusterStateRequest = isPrometheusClusterSettings ? new ClusterStateRequest().metadata(true).local(false) : null;
         }
 
         private void gatherRequests() {
@@ -183,9 +182,8 @@ public class TransportNodePrometheusMetricsAction extends HandledTransportAction
                                                               NodesStatsResponse nodesStats,
                                                               @Nullable IndicesStatsResponse indicesStats,
                                                               @Nullable ClusterStateResponse clusterStateResponse) {
-            NodePrometheusMetricsResponse response = new NodePrometheusMetricsResponse(clusterHealth,
-                    nodesStats.getNodes().get(0), indicesStats, clusterStateResponse,
-                    settings, clusterSettings);
+            NodePrometheusMetricsResponse response = new NodePrometheusMetricsResponse(clusterHealth, nodesStats.getNodes(),
+                indicesStats, clusterStateResponse, settings, clusterSettings);
             logger.info("Return response: [{}]", response);
             return response;
         }

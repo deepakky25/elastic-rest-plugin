@@ -22,18 +22,14 @@ public class PrometheusMetricsCatalog {
     private static final Logger logger = LogManager.getLogger(RestPrometheusMetricsAction.class);
 
     private String clusterName;
-    private String nodeName;
-    private String nodeId;
 
     private String metricPrefix;
 
     private HashMap<String, Object> metrics;
     private CollectorRegistry registry;
 
-    public PrometheusMetricsCatalog(String clusterName, String nodeName, String nodeId, String metricPrefix) {
+    public PrometheusMetricsCatalog(String clusterName, String metricPrefix) {
         this.clusterName = clusterName;
-        this.nodeName = nodeName;
-        this.nodeId = nodeId;
 
         this.metricPrefix = metricPrefix;
 
@@ -70,17 +66,6 @@ public class PrometheusMetricsCatalog {
         return extended;
     }
 
-    private String[] getExtendedNodeLabelValues(String... labelValues) {
-        String[] extended = new String[labelValues.length + 3];
-        extended[0] = clusterName;
-        extended[1] = nodeName;
-        extended[2] = nodeId;
-
-        System.arraycopy(labelValues, 0, extended, 3, labelValues.length);
-
-        return extended;
-    }
-
     public void registerClusterGauge(String metric, String help, String... labels) {
         Gauge gauge = Gauge.build().
                 name(metricPrefix + metric).
@@ -112,30 +97,14 @@ public class PrometheusMetricsCatalog {
 
     public void setNodeGauge(String metric, double value, String... labelValues) {
         Gauge gauge = (Gauge) metrics.get(metric);
-        gauge.labels(getExtendedNodeLabelValues(labelValues)).set(value);
+        gauge.labels(getExtendedClusterLabelValues(labelValues)).set(value);
     }
-
-    // public void registerPluginGauge(String metric, String help, String... labels) {
-    //     Gauge gauge = Gauge.build().
-    //             name(metricPrefix + metric).
-    //             help(help).
-    //             labelNames(getExtendedNodeLabelNames(labels)).
-    //             register(registry);
-
-    //     metrics.put(metric, gauge);
-    // logger.info(String.format(Locale.ENGLISH, "Registered new plugin gauge %s", metric));
-    // }
-
-    // public void setPluginGauge(String metric, double value, String... labelValues) {
-    //     Gauge gauge = (Gauge) metrics.get(metric);
-    //     gauge.labels(getExtendedNodeLabelValues(labelValues)).set(value);
-    // }
 
     public void registerSummaryTimer(String metric, String help, String... labels) {
         Summary summary = Summary.build().
                 name(metricPrefix + metric).
                 help(help).
-                labelNames(getExtendedNodeLabelNames(labels)).
+                labelNames(getExtendedClusterLabelNames(labels)).
                 register(registry);
 
         metrics.put(metric, summary);
@@ -145,7 +114,7 @@ public class PrometheusMetricsCatalog {
 
     public Summary.Timer startSummaryTimer(String metric, String... labelValues) {
         Summary summary = (Summary) metrics.get(metric);
-        return summary.labels(getExtendedNodeLabelValues(labelValues)).startTimer();
+        return summary.labels(getExtendedClusterLabelValues(labelValues)).startTimer();
     }
 
     public String toTextFormat() throws IOException {
